@@ -4,6 +4,8 @@ import type {
   Movie,
   MovieDetails,
   PopularResponse,
+  RawMovie,
+  RawMovieDetails,
   SearchResponse,
 } from "@/types/movie";
 
@@ -19,6 +21,32 @@ class ApiError extends Error {
     this.status = status;
   }
 }
+
+
+function mapMovie(api: RawMovie): Movie {
+  return {
+    id: api.id,
+    title: api.title,
+    overview: api.overview,
+    posterUrl: api.poster_url,
+    backdropUrl: api.backdrop_url,
+    releaseDate: api.release_date,
+    voteAverage: api.vote_average,
+    voteCount: api.vote_count,
+    year: api.year,
+  };
+}
+
+function mapMovieDetails(api: RawMovieDetails): MovieDetails {
+  return {
+    ...mapMovie(api),
+    runtime: api.runtime,
+    genres: api.genres,
+    status: api.status,
+    tagline: api.tagline,
+  };
+}
+
 
 async function request<T>(
   path: string,
@@ -52,18 +80,20 @@ function withSession(sessionId: string): RequestInit {
 
 export async function getPopularMovies(page = 1): Promise<Movie[]> {
   const data = await request<PopularResponse>(`/api/movies/popular?page=${page}`);
-  return data.results;
+  return data.results.map(mapMovie);
 }
 
 export async function searchMovies(query: string): Promise<Movie[]> {
   const data = await request<SearchResponse>(
     `/api/movies/search?q=${encodeURIComponent(query)}`
   );
-  return data.results;
+  return data.results.map(mapMovie);
 }
 
 export async function getMovieDetails(movieId: number | string): Promise<MovieDetails> {
-  return request<MovieDetails>(`/api/movies/${movieId}`);
+  const data = await request<RawMovieDetails>(`/api/movies/${movieId}`);
+
+  return mapMovieDetails(data);
 }
 
 export async function getFavorites(sessionId: string): Promise<Favorite[]> {
