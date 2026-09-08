@@ -1,10 +1,16 @@
-import tempfile
+import os
 import unittest
 
 from app import create_app
+from app.extensions import db
 from app.repositories.favorites_repository import FavoritesRepository
 from app.services.movie_service import MovieService
 from app.services.tmdb_service import TMDBService
+
+TEST_DATABASE_URL = os.getenv(
+    "TEST_DATABASE_URL",
+    "postgresql+psycopg://myuser:MovieMatch1234@localhost:5432/moviematch_test",
+)
 
 
 class FakeTMDB(TMDBService):
@@ -57,25 +63,29 @@ class FakeTMDB(TMDBService):
 
 
 def build_app():
-    tmpdir = tempfile.mkdtemp()
-
     class TestConfig:
+        TESTING = True
+        SQLALCHEMY_DATABASE_URI = TEST_DATABASE_URL
+        SQLALCHEMY_TRACK_MODIFICATIONS = False
         TMDB_API_KEY = "test-key"
         TMDB_BASE_URL = "https://example.test/3"
         TMDB_IMAGE_BASE_URL = "https://images.example.test/t/p"
         TMDB_IMAGE_SIZE = "w500"
-        DATABASE_PATH = f"{tmpdir}/test.db"
         CORS_ORIGINS = ["http://localhost:3000"]
         SESSION_HEADER = "X-Session-ID"
 
     app = create_app(TestConfig)
+
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
 
     movie_service = MovieService(
         FakeTMDB(),
         image_base_url=TestConfig.TMDB_IMAGE_BASE_URL,
         image_size=TestConfig.TMDB_IMAGE_SIZE,
     )
-    repository = FavoritesRepository(app)
+    repository = FavoritesRepository()
     from app.services.favorite_service import FavoriteService
 
     app.movie_service = movie_service

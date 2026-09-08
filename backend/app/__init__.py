@@ -2,7 +2,7 @@ from flask import Flask
 from flask_cors import CORS
 
 from app.config import Config
-from app.database import close_db, get_db, init_db
+from app.extensions import db
 from app.repositories.favorites_repository import FavoritesRepository
 from app.routes.errors import error_response
 from app.routes.favorites import favorites_bp
@@ -13,12 +13,14 @@ from app.services.favorite_service import FavoriteService
 from app.services.movie_service import MovieService
 from app.services.tmdb_service import TMDBError, TMDBService
 
+import app.models  # noqa: F401  ensure models are registered with SQLAlchemy metadata
+
 
 def create_app(config_object=None):
     app = Flask(__name__)
     app.config.from_object(config_object or Config)
 
-    init_db(app)
+    db.init_app(app)
 
     tmdb = TMDBService(
         api_key=app.config["TMDB_API_KEY"],
@@ -29,12 +31,12 @@ def create_app(config_object=None):
         image_base_url=app.config["TMDB_IMAGE_BASE_URL"],
         image_size=app.config["TMDB_IMAGE_SIZE"],
     )
-    favorite_repository = FavoritesRepository(app)
+    favorite_repository = FavoritesRepository()
     favorite_service = FavoriteService(favorite_repository, movie_service)
 
     app.movie_service = movie_service
     app.favorite_service = favorite_service
-    app.event_service = EventService(app)
+    app.event_service = EventService()
 
     CORS(
         app,
@@ -45,8 +47,6 @@ def create_app(config_object=None):
     app.register_blueprint(health_bp)
     app.register_blueprint(movies_bp)
     app.register_blueprint(favorites_bp)
-
-    app.teardown_appcontext(close_db)
 
     @app.errorhandler(TMDBError)
     def handle_tmdb_error(exc):

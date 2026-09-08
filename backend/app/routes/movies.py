@@ -8,12 +8,16 @@ from app.services.tmdb_service import TMDBError
 
 movies_bp = Blueprint("movies", __name__, url_prefix="/api/movies")
 
-# Initialize Redis client via environment variables
-redis_client = redis.Redis(
-    host=os.getenv("REDIS_HOST"),
-    port=os.getenv("REDIS_PORT"),
-    decode_responses=True
-)
+# Initialize Redis client via environment variables.
+# Falls back to None so the app runs (and caching is skipped) when
+# REDIS_HOST/REDIS_PORT are not configured.
+redis_client = None
+if os.getenv("REDIS_HOST"):
+    redis_client = redis.Redis(
+        host=os.getenv("REDIS_HOST"),
+        port=os.getenv("REDIS_PORT", 6379),
+        decode_responses=True,
+    )
 
 def get_movie_service():
     from flask import current_app
@@ -37,13 +41,14 @@ def popular_movies():
     print(f"Fetching popular movies for page {page} with cache key: {cache_key}")
     
     # 1. Read-aside: Check cache first
-    try:
-        cached_data = redis_client.get(cache_key)
-        if cached_data:
-            print(f"Cache hit for key: {cache_key}")
-            return jsonify({"results": json.loads(cached_data), "page": page, "source": "cache"})
-    except redis.RedisError:
-        pass  # Fail gracefully if Redis is temporarily unreachable
+    if redis_client is not None:
+        try:
+            cached_data = redis_client.get(cache_key)
+            if cached_data:
+                print(f"Cache hit for key: {cache_key}")
+                return jsonify({"results": json.loads(cached_data), "page": page, "source": "cache"})
+        except redis.RedisError:
+            pass  # Fail gracefully if Redis is temporarily unreachable
     
     # 2. Fetch fresh data from TMDB
     try:
@@ -52,10 +57,11 @@ def popular_movies():
         return error_response(str(exc), status_code=502)
     
     # 3. Cache the fresh result with a 2-hour TTL (7200 seconds)
-    try:
-        redis_client.setex(cache_key, 7200, json.dumps(movies))
-    except redis.RedisError:
-        pass
+    if redis_client is not None:
+        try:
+            redis_client.setex(cache_key, 7200, json.dumps(movies))
+        except redis.RedisError:
+            pass
     
     return jsonify({"results": movies, "page": page})
 
@@ -88,7 +94,7 @@ def movie_details(movie_id):
     cache_key = f"movies:detail:{movie_id}"
     
     try:
-        cached_data = redis_client.get(cache_key)
+        cached_data = redis_client.get(cache_key) if redis_client is not None else None
         if cached_data:
             return jsonify(json.loads(cached_data))
     except redis.RedisError:
@@ -101,7 +107,8 @@ def movie_details(movie_id):
 
     try:
         # Cache movie details for 24 hours (86400 seconds)
-        redis_client.setex(cache_key, 86400, json.dumps(movie))
+        if redis_client is not None:
+            redis_client.setex(cache_key, 86400, json.dumps(movie))
     except redis.RedisError:
         pass
     

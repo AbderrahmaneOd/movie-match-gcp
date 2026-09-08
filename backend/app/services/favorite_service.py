@@ -1,8 +1,6 @@
-import logging
-
 from app.models.favorite import Favorite
 
-logger = logging.getLogger(__name__)
+from app.repositories.favorites_repository import FavoritesRepository
 
 
 class FavoriteService:
@@ -11,8 +9,7 @@ class FavoriteService:
         self.movie_service = movie_service
 
     def list_favorites(self, session_id):
-        app = self.repository.app
-        image_builder = lambda path: self.movie_service._image_url(path)
+        image_builder = self.movie_service._image_url
         return [
             favorite.to_dict(image_url_builder=image_builder)
             for favorite in self.repository.list_by_session(session_id)
@@ -33,6 +30,3 @@ class FavoriteService:
 
     def remove_favorite(self, session_id, movie_id):
         return self.repository.remove(session_id, movie_id)
-
-    def is_favorite(self, session_id, movie_id):
-        return self.repository.get(session_id, movie_id) is not None

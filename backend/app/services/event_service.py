@@ -1,23 +1,19 @@
 import json
 import logging
-from datetime import datetime, timezone
 
-from app.database import get_db
+from app.extensions import db
+from app.models.favorite import Event
 
 logger = logging.getLogger(__name__)
 
 
 class EventService:
-    """Generates basic application/analytics events.
+    """Best-effort analytics event writer.
 
-    Events are only ever best-effort and never block the application
-    response. The default transport writes the event to the local event
-    table (and emits a structured log line); swapping in Pub/Sub later
-    keeps this interface unchanged.
+    Events are persisted to the ``events`` table and never block the
+    application response.  In a future GCP deployment the writer can be
+    swapped to Pub/Sub without changing the public interface.
     """
-
-    def __init__(self, app):
-        self.app = app
 
     def publish(
         self,
@@ -26,28 +22,17 @@ class EventService:
         session_id=None,
         metadata=None,
     ):
-        event = {
-            "event_type": event_type,
-            "movie_id": movie_id,
-            "session_id": session_id,
-            "metadata": metadata or {},
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
-        logger.info("event event_type=%s", event_type, extra=event)
         try:
-            db = get_db(self.app)
-            db.execute(
-                """
-                INSERT INTO events (event_type, movie_id, session_id, metadata)
-                VALUES (?, ?, ?, ?)
-                """,
-                (
-                    event_type,
-                    movie_id,
-                    session_id,
-                    json.dumps(metadata or {}),
-                ),
+            db.session.add(
+                Event(
+                    event_type=event_type,
+                    movie_id=movie_id,
+                    session_id=session_id,
+                    metadata_json=json.dumps(metadata or {}),
+                )
             )
-            db.commit()
+            db.session.commit()
+            logger.info("event event_type=%s", event_type)
         except Exception:
+            db.session.rollback()
             logger.exception("Failed to persist event %s", event_type)
