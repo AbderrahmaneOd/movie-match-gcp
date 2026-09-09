@@ -61,3 +61,7 @@ class Config:
     ]
 
     SESSION_HEADER = os.getenv("SESSION_HEADER", "X-Session-ID")
+    
+    GCP_PROJECT_ID = os.getenv("GCP_PROJECT_ID")
+    TOPIC_ID = os.getenv("TOPIC_ID")
+    PUBSUB_EMULATOR_HOST = os.getenv("PUBSUB_EMULATOR_HOST")

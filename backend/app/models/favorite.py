@@ -36,16 +36,3 @@ class Favorite(db.Model):
             "vote_average": self.vote_average,
             "created_at": self.created_at.isoformat() if self.created_at else None,
         }
-
-
-class Event(db.Model):
-    __tablename__ = "events"
-
-    id = db.Column(db.Integer, primary_key=True)
-    event_type = db.Column(db.String(64), nullable=False, index=True)
-    movie_id = db.Column(db.Integer)
-    session_id = db.Column(db.String(128))
-    metadata_json = db.Column("metadata", db.Text)
-    created_at = db.Column(
-        db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
-    )

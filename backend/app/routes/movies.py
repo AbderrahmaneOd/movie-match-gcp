@@ -79,7 +79,8 @@ def search_movies():
     except TMDBError as exc:
         return error_response(str(exc), status_code=502)
 
-    get_event_service().publish("movie_searched", metadata={"query": query})
+    get_event_service().publish_to_pubsub("movie_searched", metadata={"query": query})
+    
     return jsonify({"results": movies, "query": query})
 
 
@@ -87,7 +88,7 @@ def search_movies():
 def movie_details(movie_id):
     
     session_id = request.headers.get("X-Session-ID")
-    get_event_service().publish(
+    get_event_service().publish_to_pubsub(
         "movie_viewed", movie_id=movie_id, session_id=session_id
     )
     

@@ -38,25 +38,8 @@ def upgrade() -> None:
     )
     op.create_index("ix_favorites_session_id", "favorites", ["session_id"])
 
-    op.create_table(
-        "events",
-        sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column("event_type", sa.String(64), nullable=False),
-        sa.Column("movie_id", sa.Integer(), nullable=True),
-        sa.Column("session_id", sa.String(128), nullable=True),
-        sa.Column("metadata", sa.Text(), nullable=True),
-        sa.Column(
-            "created_at",
-            sa.DateTime(timezone=True),
-            nullable=False,
-            server_default=sa.func.now(),
-        ),
-    )
-    op.create_index("ix_events_event_type", "events", ["event_type"])
 
 
 def downgrade() -> None:
-    op.drop_index("ix_events_event_type", table_name="events")
-    op.drop_table("events")
     op.drop_index("ix_favorites_session_id", table_name="favorites")
     op.drop_table("favorites")

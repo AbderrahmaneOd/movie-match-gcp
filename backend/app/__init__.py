@@ -36,7 +36,10 @@ def create_app(config_object=None):
 
     app.movie_service = movie_service
     app.favorite_service = favorite_service
-    app.event_service = EventService()
+    app.event_service = EventService(
+        gcp_project_id=app.config.get("GCP_PROJECT_ID"),
+        topic_id=app.config.get("TOPIC_ID")
+    )
 
     CORS(
         app,

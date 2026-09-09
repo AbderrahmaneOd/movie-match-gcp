@@ -44,7 +44,7 @@ def add_favorite(movie_id):
     except TMDBError as exc:
         return error_response(str(exc), status_code=502)
 
-    get_event_service().publish(
+    get_event_service().publish_to_pubsub(
         "movie_favorited", movie_id=movie_id, session_id=session_id
     )
     return jsonify(favorite), 201
@@ -60,7 +60,8 @@ def remove_favorite(movie_id):
     if not removed:
         return error_response("Favorite not found", status_code=404)
 
-    get_event_service().publish(
+    get_event_service().publish_to_pubsub(
         "movie_unfavorited", movie_id=movie_id, session_id=session_id
     )
+    
     return jsonify({"removed": True, "movie_id": movie_id})
