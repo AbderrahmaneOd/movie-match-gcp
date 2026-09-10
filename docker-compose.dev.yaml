@@ -30,6 +30,39 @@ services:
       - "8085:8085"
     command: gcloud beta emulators pubsub start --host-port=0.0.0.0:8085 --project=my-local-project
 
+
+  backend:
+    image: movie-match:backend-v1.1
+    container_name: movie-match-backend
+    restart: unless-stopped
+    ports:
+      - "5000:8081"
+    environment:
+      PORT: 8081
+
+      DATABASE_URL: postgresql+psycopg://myuser:MovieMatch1234@db:5432/MovieMatch
+      
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+      TMDB_API_KEY: ${TMDB_API_KEY}
+      TMDB_BASE_URL: https://api.themoviedb.org/3
+      TMDB_IMAGE_BASE_URL: https://image.tmdb.org/t/p
+      TMDB_IMAGE_SIZE: w500
+
+      SECRET_KEY: dev-secret
+      SESSION_HEADER: X-Session-ID
+      CORS_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
+
+      GCP_PROJECT_ID: my-local-project
+      TOPIC_ID: events
+      PUBSUB_EMULATOR_HOST: pubsub-emulator:8085
+    depends_on:
+      - db
+      - redis
+      - pubsub-emulator
+
+
 volumes:
   redis_data:
   postgres_data:

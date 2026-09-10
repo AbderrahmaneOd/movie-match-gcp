@@ -1,6 +1,3 @@
-
-
-
 # Create "events" topic:
 curl -X PUT "http://localhost:8085/v1/projects/my-local-project/topics/events"
 
@@ -10,7 +7,6 @@ curl -X PUT "http://localhost:8085/v1/projects/my-local-project/subscriptions/ev
      -d '{"topic": "projects/my-local-project/topics/events"}'
 
 # List (Pull) the events arriving in the topic
-
 curl -X POST "http://localhost:8085/v1/projects/my-local-project/subscriptions/events-sub:pull" \
      -H "Content-Type: application/json" \
      -d '{"maxMessages": 10, "returnImmediately": true}'
@@ -49,3 +45,7 @@ psql -U myuser -W MovieMatch1234 -d MovieMatch
 
 # Show tables
 SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public';
+
+
+# Backend dev lanching
+python app.py
