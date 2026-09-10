@@ -54,6 +54,6 @@ jobs:
     # Step 4: Run your test suite
     - name: Run tests with pytest
       env:
-        TEST_DATABASE_URL: postgresql://myuser:MovieMatch1234@localhost:5432/moviematch_test
+        TEST_DATABASE_URL: postgresql+psycopg://myuser:MovieMatch1234@localhost:5432/moviematch_test
       run: |
         pytest
