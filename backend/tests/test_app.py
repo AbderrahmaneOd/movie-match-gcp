@@ -94,10 +94,10 @@ def build_app():
 
 
 class MovieServiceTest(unittest.TestCase):
-    def setUp(self):
-        app = build_app()
-        self.app = app
-        self.service = app.movie_service
+    @classmethod
+    def setUpClass(cls):
+        cls.app = build_app()
+        cls.service = cls.app.movie_service
 
     def test_popular_movies_serialization(self):
         movies = self.service.get_popular_movies()
@@ -129,9 +129,11 @@ class MovieServiceTest(unittest.TestCase):
 
 
 class FavoritesApiTest(unittest.TestCase):
-    def setUp(self):
-        self.app = build_app()
-        self.client = self.app.test_client()
+    @classmethod
+    def setUpClass(cls):
+        # Runs ONCE before all tests in this class
+        cls.app = build_app()
+        cls.client = cls.app.test_client()
 
     def test_favorites_requires_session(self):
         resp = self.client.get("/api/favorites")
@@ -178,9 +180,10 @@ class FavoritesApiTest(unittest.TestCase):
 
 
 class HealthTest(unittest.TestCase):
-    def setUp(self):
-        self.app = build_app()
-        self.client = self.app.test_client()
+    @classmethod
+    def setUpClass(cls):
+        cls.app = build_app()
+        cls.client = cls.app.test_client()
 
     def test_health(self):
         resp = self.client.get("/health")

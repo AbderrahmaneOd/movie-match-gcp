@@ -42,3 +42,10 @@ curl -X POST \
       }
     ]
   }'
+
+
+# Connect to local DB
+psql -U myuser -W MovieMatch1234 -d MovieMatch
+
+# Show tables
+SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public';
