@@ -1,0 +1,49 @@
+# Node modules and build logs
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Next.js build artifacts and cache
+.next
+out
+.turbo
+
+# Environment variables
+# Anything left in the context can get baked into `.next/standalone`.
+# Keep production secrets out of the build context and pass them at runtime instead.
+.env
+.env*.local
+.env.development
+.env.test
+.env.production.local
+
+# Docker files (Not needed inside the build context)
+Dockerfile*
+.dockerignore
+compose.yaml
+compose.yml
+docker-compose*.yaml
+docker-compose*.yml
+
+# Version control and CI/CD
+.git
+.gitignore
+.github
+.gitlab-ci.yml
+
+# IDE/Editor configurations
+.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Testing and linting caches
+.cache
+.eslintcache
+.stylelintcache
+*.tsbuildinfo
