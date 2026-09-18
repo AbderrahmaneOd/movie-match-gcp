@@ -35,7 +35,7 @@ jobs:
     steps:
     # Step 1: Fetch code from your repository
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
 
     # Step 2: Set up the Python environment
     - name: Set up Python 3.14
@@ -57,3 +57,38 @@ jobs:
         TEST_DATABASE_URL: postgresql+psycopg://myuser:MovieMatch1234@localhost:5432/moviematch_test
       run: |
         pytest
+
+
+
+  build_deploy:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Step 1: Authenticate with Google Cloud using Workload Identity Federation
+    - name: Authenticate with Google Cloud
+      uses: google-github-actions/auth@v1
+      with:
+        workload_identity_provider: projects/123456789012/locations/global/workloadIdentityPools/my-pool/providers/my-provider
+        service_account: my-service-account@my-project.iam.gserviceaccount.com
+
+    # Step 2: Login to Artifact Registry
+    - name: Login to Artifact Registry
+      uses: docker/login-action@v3
+      with:
+        registry: us-central1-docker.pkg.dev
+        username: my-service-account@my-project.iam.gserviceaccount.com
+        password: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+    
+    # Step 3: Build and push the Docker image
+    - name: Build and Push Docker Image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: |
+          ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:latest
