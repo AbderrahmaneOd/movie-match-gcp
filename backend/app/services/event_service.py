@@ -25,30 +25,7 @@ class EventService:
             self.publisher = pubsub_v1.PublisherClient()
             self.topic_path = self.publisher.topic_path(self.gcp_project_id, self.topic_id)
         else:
-            self.publisher = None
-        
-    # def publish(
-    #     self,
-    #     event_type,
-    #     movie_id=None,
-    #     session_id=None,
-    #     metadata=None,
-    # ):
-    #     try:
-    #         db.session.add(
-    #             Event(
-    #                 event_type=event_type,
-    #                 movie_id=movie_id,
-    #                 session_id=session_id,
-    #                 metadata_json=json.dumps(metadata or {}),
-    #             )
-    #         )
-    #         db.session.commit()
-    #         logger.info("event event_type=%s", event_type)
-    #     except Exception:
-    #         db.session.rollback()
-    #         logger.exception("Failed to persist event %s", event_type)
-            
+            self.publisher = None            
     
     def publish_to_pubsub(self, event_type, movie_id=None, session_id=None, metadata=None):
         
@@ -57,19 +34,20 @@ class EventService:
             "session_id": session_id,
             "movie_id": movie_id,
             "created_at": datetime.now(timezone.utc).isoformat(),
-            "metadata": metadata or {}
+            "metadata":  json.dumps(metadata or {})
         }
 
         # Local development graceful fallback
         if not self.publisher:
-            print(f"[LOCAL EVENT]: {event_payload}")
+            logger.info( "LOCAL EVENT: event_type=%s payload=%s", event_type, event_payload)
             return
 
         try:
             # Pub/Sub payload must be byte-encoded JSON
             data = json.dumps(event_payload).encode("utf-8")
+            logger.info( "Publishing event to Pub/Sub: topic=%s event_type=%s payload=%s", self.topic_path, event_type, event_payload)
             future = self.publisher.publish(self.topic_path, data)
-            future.result(timeout=5)  # Wait for confirmation
+            message_id = future.result(timeout=5)  # Wait for confirmation
+            logger.info( "Event published successfully: event_type=%s message_id=%s", event_type, message_id)
         except Exception as e:
-            # Handle analytics logging failures gracefully without breaking the user request
-            logger.exception("Failed to publish event to Pub/Sub")
+            logger.exception( "Failed to publish event to Pub/Sub: " "event_type=%s payload=%s", event_type, event_payload)
